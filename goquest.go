@@ -19,7 +19,7 @@ type Goquest struct {
 	timeout  time.Duration
 }
 
-func NewQuest(rawurl, method string) *Goquest {
+func newGoquest(rawurl, method string) *Goquest {
 	//var resp http.Response
 	uri, err := url.Parse(rawurl)
 	if err != nil {
@@ -30,6 +30,9 @@ func NewQuest(rawurl, method string) *Goquest {
 		request: &http.Request{
 			URL:    uri,
 			Method: method,
+			Header: http.Header{
+				"User-Agent": []string{"Goquest"},
+			},
 		},
 		timeout: 30,
 	}
@@ -50,7 +53,14 @@ func (g *Goquest) Query() (*Goquest, error) {
 }
 
 func Get(url string) *Goquest {
-	return NewQuest(url, http.MethodGet)
+	return newGoquest(url, http.MethodGet)
+}
+
+// Request
+// SetUserAgent sets User-Agent header field
+func (g *Goquest) SetUserAgent(ua string) *Goquest {
+	g.request.Header.Set("User-Agent", ua)
+	return g
 }
 
 // Response
@@ -73,4 +83,11 @@ func (g *Goquest) String() string {
 func (g *Goquest) Json(v interface{}) error {
 	data := g.Byte()
 	return json.Unmarshal(data, v)
+}
+
+func (g *Goquest) StatusCode() int {
+	if g.response == nil {
+		return 0
+	}
+	return g.response.StatusCode
 }
