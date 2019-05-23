@@ -56,6 +56,31 @@ func Get(url string) *Goquest {
 	return newGoquest(url, http.MethodGet)
 }
 
+func Post(url string) *Goquest {
+	return newGoquest(url, http.MethodPost)
+}
+
+func (g *Goquest) Param(key, value string) *Goquest {
+	if param, ok := g.params[key]; ok {
+		g.params[key] = append(param, value)
+	} else {
+		g.params[key] = []string{value}
+	}
+	return g
+}
+
+// Get Method: Params To Url
+func (g *Goquest) urlencode() {
+	// TODO 将params转成get参数
+}
+
+func (g *Goquest) Body(data interface{}) {
+	g.request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+}
+func (g *Goquest) JsonBody(data interface{}) {
+	g.request.Header.Set("Content-Type", "application/json")
+}
+
 // Request
 // SetUserAgent sets User-Agent header field
 func (g *Goquest) SetUserAgent(ua string) *Goquest {
@@ -65,14 +90,12 @@ func (g *Goquest) SetUserAgent(ua string) *Goquest {
 
 // Response
 func (g *Goquest) Byte() []byte {
-	defer g.response.Body.Close()
-	if g.response == nil || g.response.Body == nil {
-		fmt.Println("Goquest: Response Or Body Is Nil")
+	if g.StatusCode() == 0 {
+		fmt.Println("Goquest: You May Have Forgotten To Call The `Query`")
 		return []byte{}
 	}
-	if g.body == nil {
-		g.body, _ = ioutil.ReadAll(g.response.Body)
-	}
+	g.body, _ = ioutil.ReadAll(g.response.Body)
+	g.response.Body.Close()
 	return g.body
 }
 
@@ -81,12 +104,11 @@ func (g *Goquest) String() string {
 }
 
 func (g *Goquest) Json(v interface{}) error {
-	data := g.Byte()
-	return json.Unmarshal(data, v)
+	return json.Unmarshal(g.Byte(), v)
 }
 
 func (g *Goquest) StatusCode() int {
-	if g.response == nil {
+	if g.response == nil || g.response.Body == nil {
 		return 0
 	}
 	return g.response.StatusCode

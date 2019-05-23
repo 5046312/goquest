@@ -2,12 +2,18 @@ package goquest
 
 import "testing"
 
-func TestGet(t *testing.T) {
+func TestGetString(t *testing.T) {
 	quest, err := Get("http://httpbin.org/get").Query()
 	if err == nil {
 		t.Log(quest.String())
-		t.Log(quest.Byte())
+	} else {
+		t.Error(err)
+	}
+}
 
+func TestGetJson(t *testing.T) {
+	quest, err := Get("http://httpbin.org/get").Query()
+	if err == nil {
 		type R struct {
 			Origin string `json:"origin"`
 		}
@@ -17,11 +23,8 @@ func TestGet(t *testing.T) {
 			t.Error(err)
 		}
 		t.Log(json.Origin)
-	} else {
-		t.Error(err)
 	}
 }
-
 func TestGetErr(t *testing.T) {
 	quest, err := Get("http://err.xxx.com/ppp").Query()
 	if err != nil {
