@@ -40,3 +40,14 @@ func TestGoquest_SetUserAgent(t *testing.T) {
 		t.Log(quest.String())
 	}
 }
+func TestGoquest_SetGetParams(t *testing.T) {
+	quest, err := Get("http://httpbin.org/get").Param("a", "1").Param("b", "2").Param("c", "3").Query()
+	if err == nil {
+		t.Log(quest.String())
+	}
+
+	quest, err = Get("http://httpbin.org/get?get=12345").Param("a", "1").Param("b", "2").Param("c", "3").Query()
+	if err == nil {
+		t.Log(quest.String())
+	}
+}

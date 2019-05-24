@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -21,14 +22,15 @@ type Goquest struct {
 
 func newGoquest(rawurl, method string) *Goquest {
 	//var resp http.Response
-	uri, err := url.Parse(rawurl)
+	rUrl, err := url.Parse(rawurl)
 	if err != nil {
 		log.Println("Goquest:", err)
 	}
 	return &Goquest{
-		url: rawurl,
+		url:    rawurl,
+		params: make(map[string][]string),
 		request: &http.Request{
-			URL:    uri,
+			URL:    rUrl,
 			Method: method,
 			Header: http.Header{
 				"User-Agent": []string{"Goquest"},
@@ -39,6 +41,8 @@ func newGoquest(rawurl, method string) *Goquest {
 }
 
 func (g *Goquest) Query() (*Goquest, error) {
+	// encodeGetParams
+	g.encodeGetParams()
 	client := &http.Client{
 		Transport: &http.Transport{
 			ResponseHeaderTimeout: time.Second * g.timeout,
@@ -70,8 +74,28 @@ func (g *Goquest) Param(key, value string) *Goquest {
 }
 
 // Get Method: Params To Url
-func (g *Goquest) urlencode() {
-	// TODO 将params转成get参数
+func (g *Goquest) encodeGetParams() {
+	// 仅限Get请求
+	if g.request.Method != http.MethodGet {
+		return
+	}
+
+	// 将params转成get参数
+	if len(g.params) != 0 {
+		params := url.Values(g.params)
+		paramString := params.Encode()
+		oUrl := g.url
+		if !strings.Contains(oUrl, "?") {
+			// Not Contain `?`
+			oUrl += "?" + paramString
+		} else {
+			oUrl += "&" + paramString
+		}
+		uri, err := url.Parse(oUrl)
+		if err == nil {
+			g.request.URL = uri
+		}
+	}
 }
 
 func (g *Goquest) Body(data interface{}) {
