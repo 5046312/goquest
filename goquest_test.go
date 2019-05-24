@@ -51,3 +51,32 @@ func TestGoquest_SetGetParams(t *testing.T) {
 		t.Log(quest.String())
 	}
 }
+func TestGoquest_Post(t *testing.T) {
+	quest, err := Post("http://httpbin.org/post").Query()
+	if err == nil {
+		t.Log(quest.String())
+	}
+}
+func TestGoquest_PostForm(t *testing.T) {
+	quest := Post("http://httpbin.org/post")
+	quest.Param("a", "123")
+	q, err := quest.Query()
+	if err == nil {
+		t.Log(q.String())
+	} else {
+		t.Error(err)
+	}
+}
+func TestGoquest_PostJson(t *testing.T) {
+	type json struct {
+		Name string `json:"name"`
+	}
+	quest := Post("http://httpbin.org/post")
+	quest.JsonBody(&json{"Jack Ma"})
+	q, err := quest.Query()
+	if err == nil {
+		t.Log(q.String())
+	} else {
+		t.Error(err)
+	}
+}

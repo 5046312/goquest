@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -45,6 +44,9 @@ func newGoquest(rawurl, method string) *Goquest {
 func (g *Goquest) Query() (*Goquest, error) {
 	// encodeGetParams
 	g.encodeGetParams()
+	// Post Params
+	g.encodePostParams()
+
 	client := &http.Client{
 		Transport: &http.Transport{
 			ResponseHeaderTimeout: time.Second * g.timeout,
@@ -95,32 +97,19 @@ func (g *Goquest) encodeGetParams() {
 	}
 }
 
-func (g *Goquest) SetBody(body interface{}) *Goquest {
-	var bf io.Reader
-	switch bodyType := body.(type) {
-	case string:
-		bf = bytes.NewBufferString(bodyType)
-		g.request.ContentLength = int64(len(bodyType))
-	case []byte:
-		bf = bytes.NewBuffer(bodyType)
-		g.request.ContentLength = int64(len(bodyType))
-	}
-	g.request.Body = ioutil.NopCloser(bf)
-	return g
-}
-
-func (g *Goquest) Body(data interface{}) {
-	if g.request.Body == nil && data != nil {
-		dataByte, err := json.Marshal(data)
-		if err != nil {
-			return g, err
-		}
-		g.request.Body = ioutil.NopCloser(bytes.NewReader(dataByte))
-		g.request.ContentLength = int64(len(dataByte))
+// Post or other Method: Set Body
+func (g *Goquest) encodePostParams() {
+	if g.request.Method != http.MethodGet && g.request.Body == nil && len(g.params) > 0 {
+		params := url.Values(g.params)
+		paramString := params.Encode()
+		bf := bytes.NewBufferString(paramString)
+		g.request.Body = ioutil.NopCloser(bf)
+		g.request.ContentLength = int64(len(paramString))
 		g.request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
-	return g, nil
 }
+
+// JsonBody
 func (g *Goquest) JsonBody(data interface{}) (*Goquest, error) {
 	if g.request.Body == nil && data != nil {
 		dataByte, err := json.Marshal(data)
