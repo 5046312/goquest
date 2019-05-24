@@ -1,8 +1,10 @@
 package goquest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -75,13 +77,8 @@ func (g *Goquest) Param(key, value string) *Goquest {
 
 // Get Method: Params To Url
 func (g *Goquest) encodeGetParams() {
-	// 仅限Get请求
-	if g.request.Method != http.MethodGet {
-		return
-	}
-
-	// 将params转成get参数
-	if len(g.params) != 0 {
+	// 仅限Get请求,将params转成get参数
+	if g.request.Method == http.MethodGet && len(g.params) != 0 {
 		params := url.Values(g.params)
 		paramString := params.Encode()
 		oUrl := g.url
@@ -98,11 +95,43 @@ func (g *Goquest) encodeGetParams() {
 	}
 }
 
-func (g *Goquest) Body(data interface{}) {
-	g.request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+func (g *Goquest) SetBody(body interface{}) *Goquest {
+	var bf io.Reader
+	switch bodyType := body.(type) {
+	case string:
+		bf = bytes.NewBufferString(bodyType)
+		g.request.ContentLength = int64(len(bodyType))
+	case []byte:
+		bf = bytes.NewBuffer(bodyType)
+		g.request.ContentLength = int64(len(bodyType))
+	}
+	g.request.Body = ioutil.NopCloser(bf)
+	return g
 }
-func (g *Goquest) JsonBody(data interface{}) {
-	g.request.Header.Set("Content-Type", "application/json")
+
+func (g *Goquest) Body(data interface{}) {
+	if g.request.Body == nil && data != nil {
+		dataByte, err := json.Marshal(data)
+		if err != nil {
+			return g, err
+		}
+		g.request.Body = ioutil.NopCloser(bytes.NewReader(dataByte))
+		g.request.ContentLength = int64(len(dataByte))
+		g.request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	return g, nil
+}
+func (g *Goquest) JsonBody(data interface{}) (*Goquest, error) {
+	if g.request.Body == nil && data != nil {
+		dataByte, err := json.Marshal(data)
+		if err != nil {
+			return g, err
+		}
+		g.request.Body = ioutil.NopCloser(bytes.NewReader(dataByte))
+		g.request.ContentLength = int64(len(dataByte))
+		g.request.Header.Set("Content-Type", "application/json")
+	}
+	return g, nil
 }
 
 // Request
