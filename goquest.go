@@ -124,9 +124,15 @@ func (g *Goquest) JsonBody(data interface{}) (*Goquest, error) {
 }
 
 // Request
+// Set Header Map
+func (g *Goquest) SetHeader(key, value string) *Goquest {
+	g.request.Header.Set(key, value)
+	return g
+}
+
 // SetUserAgent sets User-Agent header field
 func (g *Goquest) SetUserAgent(ua string) *Goquest {
-	g.request.Header.Set("User-Agent", ua)
+	g.SetHeader("User-Agent", ua)
 	return g
 }
 
